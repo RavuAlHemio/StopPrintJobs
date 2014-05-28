@@ -4,5 +4,8 @@
 
 #pragma once
 
+#include <vector>
+
+#include <vcclr.h>
 #include <windows.h>
 
