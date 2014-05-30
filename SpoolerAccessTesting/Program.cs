@@ -12,7 +12,10 @@ namespace SpoolerAccessTesting
         static void Main(string[] args)
         {
             var allPrinters = Spooler.EnumLocalPrinters(false);
-            Spooler.PauseNewJobsProc(allPrinters);
+            using (var spooler = new Spooler())
+            {
+                spooler.PauseNewJobsProc(allPrinters);
+            }
         }
     }
 }

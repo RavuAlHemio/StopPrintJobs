@@ -9,6 +9,27 @@
 template class ArrayDeleter < unsigned char > ;
 
 namespace SpoolerAccess {
+	
+	Spooler::Spooler()
+		: m_stopSemaphore(nullptr)
+	{
+		m_stopSemaphore = CreateSemaphoreW(nullptr, 0, 1, nullptr);
+		if (m_stopSemaphore == nullptr)
+		{
+			throw gcnew SpoolerAccess::Win32Exception("failed to create stopping semaphore", "CreateSemaphore");
+		}
+	}
+
+	Spooler::~Spooler()
+	{
+		if (m_stopSemaphore != nullptr)
+		{
+			if (!CloseHandle(m_stopSemaphore))
+			{
+				throw gcnew SpoolerAccess::Win32Exception("failed to release stopping semaphore", "CloseHandle");
+			}
+		}
+	}
 
 	List<String^>^ Spooler::EnumLocalPrinters(bool sharedOnly)
 	{
@@ -89,8 +110,10 @@ namespace SpoolerAccess {
 		notifyOptions.pTypes = &notifyOptionsType;
 
 		// fetch notification handles
-		std::vector<HANDLE> notifications;
+		std::vector<HANDLE> semaphoreAndNotifications;
 		StdCallDeleterVector<HANDLE, FindClosePrinterChangeNotification> notificationDeleters;
+
+		semaphoreAndNotifications.push_back(m_stopSemaphore);
 
 		for (auto&& printer : printers)
 		{
@@ -99,20 +122,27 @@ namespace SpoolerAccess {
 			{
 				throw gcnew SpoolerAccess::Win32Exception("failed to subscribe to notifications for a printer", "FindFirstPrinterChangeNotification");
 			}
-			notifications.push_back(notif);
+			semaphoreAndNotifications.push_back(notif);
 			notificationDeleters.push_back(notif);
 		}
 
 		// and we wait and we wonder
 		for (;;)
 		{
-			DWORD waitResult = WaitForMultipleObjects(notifications.size(), &notifications[0], FALSE, INFINITE);
-			if (waitResult >= notifications.size())
+			DWORD waitResult = WaitForMultipleObjects(semaphoreAndNotifications.size(), &semaphoreAndNotifications[0], FALSE, INFINITE);
+			if (waitResult >= semaphoreAndNotifications.size())
 			{
 				throw gcnew SpoolerAccess::Win32Exception("waiting for printers failed", "WaitForMultipleObjects");
 			}
+			else if (waitResult == 0)
+			{
+				// stopping semaphore triggered
+				break;
+			}
 
-			HANDLE triggeredNotif = notifications[waitResult];
+			// notification triggered
+
+			HANDLE triggeredNotif = semaphoreAndNotifications[waitResult];
 			DWORD whatChanged;
 			PRINTER_NOTIFY_INFO *notifyInfo;
 			if (!FindNextPrinterChangeNotification(triggeredNotif, &whatChanged, &notifyOptions, reinterpret_cast<LPVOID*>(&notifyInfo)))
@@ -124,15 +154,13 @@ namespace SpoolerAccess {
 			// alright, what's the job's ID?
 			if (notifyInfo->Count == 0)
 			{
-				Console::Error->WriteLine("add-job notification with no data?!");
-				continue;
+				throw gcnew SpoolerAccess::Win32Exception("add-job notification with no data?!", "FindNextPrinterChangeNotification");
 			}
 
 			PRINTER_NOTIFY_INFO_DATA *statusData = &(notifyInfo->aData[0]);
 			if (statusData->Type != JOB_NOTIFY_TYPE)
 			{
-				Console::Error->WriteLine("add-job notification with no job-related data?!");
-				continue;
+				throw gcnew SpoolerAccess::Win32Exception("add-job notification with no job-related data?!", "FindNextPrinterChangeNotification");
 			}
 
 			// pause it
@@ -140,6 +168,14 @@ namespace SpoolerAccess {
 			{
 				throw gcnew SpoolerAccess::Win32Exception("pausing job failed", "SetJob");
 			}
+		}
+	}
+
+	void Spooler::StopPausingNewJobs()
+	{
+		if (!ReleaseSemaphore(m_stopSemaphore, 1, nullptr))
+		{
+			throw gcnew SpoolerAccess::Win32Exception("failed to trigger stopping semaphore", "ReleaseSemaphore");
 		}
 	}
 }
