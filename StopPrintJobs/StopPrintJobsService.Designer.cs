@@ -28,10 +28,18 @@
         /// </summary>
         private void InitializeComponent()
         {
-            components = new System.ComponentModel.Container();
-            this.ServiceName = "Service1";
+            this.TheEventLog = new System.Diagnostics.EventLog();
+            ((System.ComponentModel.ISupportInitialize)(this.TheEventLog)).BeginInit();
+            // 
+            // StopPrintJobsService
+            // 
+            this.ServiceName = "StopPrintJobs";
+            ((System.ComponentModel.ISupportInitialize)(this.TheEventLog)).EndInit();
+
         }
 
         #endregion
+
+        private System.Diagnostics.EventLog TheEventLog;
     }
 }

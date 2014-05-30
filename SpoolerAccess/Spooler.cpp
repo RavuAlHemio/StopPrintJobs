@@ -164,7 +164,8 @@ namespace SpoolerAccess {
 			}
 
 			// pause it
-			if (!SetJobW(printers[waitResult], statusData->Id, 0, nullptr, JOB_CONTROL_PAUSE))
+			// (need to subtract 1 because 0 is the stopping semaphore)
+			if (!SetJobW(printers[waitResult-1], statusData->Id, 0, nullptr, JOB_CONTROL_PAUSE))
 			{
 				throw gcnew SpoolerAccess::Win32Exception("pausing job failed", "SetJob");
 			}
