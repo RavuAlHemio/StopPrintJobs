@@ -90,21 +90,23 @@ namespace SpoolerAccessPI
                 {
                     Marshal.WriteInt16(fieldsArrayBytes.Pointer, (short)Natives.Constants.PRINTER_NOTIFY_FIELD_STATUS);
 
-                    var notifyOptionsType = new Natives.Structures.PRINTER_NOTIFY_OPTIONS_TYPE();
-                    notifyOptionsType.Type = Natives.Constants.JOB_NOTIFY_TYPE;
-                    notifyOptionsType.Reserved0 = 0;
-                    notifyOptionsType.Reserved1 = 0;
-                    notifyOptionsType.Reserved2 = 0;
-                    notifyOptionsType.Count = 1;
-                    notifyOptionsType.Fields = fieldsArrayBytes.Pointer;
+                    var notifyOptionsType = new Natives.Structures.PRINTER_NOTIFY_OPTIONS_TYPE {
+                        Type = Natives.Constants.JOB_NOTIFY_TYPE,
+                        Reserved0 = 0,
+                        Reserved1 = 0,
+                        Reserved2 = 0,
+                        Count = 1,
+                        Fields = fieldsArrayBytes.Pointer
+                    };
                     notifyOptionsTypeSerializer.TheStruct = notifyOptionsType;
                     notifyOptionsTypeSerializer.Serialize();
 
-                    var notifyOptions = new Natives.Structures.PRINTER_NOTIFY_OPTIONS();
-                    notifyOptions.Version = 2;
-                    notifyOptions.Flags = 0;
-                    notifyOptions.Count = 1;
-                    notifyOptions.Types = notifyOptionsTypeSerializer.StructPointer;
+                    var notifyOptions = new Natives.Structures.PRINTER_NOTIFY_OPTIONS {
+                        Version = 2,
+                        Flags = 0,
+                        Count = 1,
+                        Types = notifyOptionsTypeSerializer.StructPointer
+                    };
                     notifyOptionsSerializer.TheStruct = notifyOptions;
                     notifyOptionsSerializer.Serialize();
 
