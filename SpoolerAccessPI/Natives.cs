@@ -1,70 +1,141 @@
+// Released into the public domain.
+// http://creativecommons.org/publicdomain/zero/1.0/
+
 using System;
 using System.Runtime.InteropServices;
 
 namespace SpoolerAccessPI
 {
-	public static class Natives
+    internal static class Natives
     {
-		public static class Constants
-		{
-			public const uint ERROR_INSUFFICIENT_BUFFER = 122;
+        public static class Structures
+        {
+            [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+            public struct PRINTER_INFO_4
+            {
+                public string PrinterName;
+                public string ServerName;
+                public uint Attributes;
+            }
 
-			public const uint INFINITE = 0xffffffff;
+            [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+            public struct PRINTER_NOTIFY_OPTIONS_TYPE
+            {
+                public ushort Type;
+                public ushort Reserved0;
+                public uint Reserved1;
+                public uint Reserved2;
+                public uint Count;
+                public IntPtr Fields; /* points to ushort[Count] */
+            }
 
-			public const uint PRINTER_CHANGE_ADD_JOB = 0x00000100;
+            [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+            public struct PRINTER_NOTIFY_OPTIONS
+            {
+                public uint Version;
+                public uint Flags;
+                public uint Count;
+                public IntPtr Types; /* points to PRINTER_NOTIFY_OPTIONS_TYPE[Count] */
+            }
 
-			public const uint PRINTER_ENUM_LOCAL = 0x00000002;
-			public const uint PRINTER_ENUM_SHARED = 0x00000020;
+            [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+            public struct PRINTER_NOTIFY_INFO
+            {
+                public uint Version;
+                public uint Flags;
+                public uint Count;
+                public PRINTER_NOTIFY_INFO_DATA Data; /* followed by another Count-1 of the same */
+            }
 
-			public const ushort PRINTER_NOTIFY_FIELD_STATUS = 0x12;
+            [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+            public struct PRINTER_NOTIFY_INFO_DATA
+            {
+                public ushort Type;
+                public ushort Field;
+                public uint Reserved;
+                public uint ID;
+                public PRINTER_NOTIFY_INFO_DATA_NotifyData NotifyData;
+            }
 
-			public const ushort JOB_NOTIFY_TYPE = 0x01;
+            [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Auto)]
+            public struct PRINTER_NOTIFY_INFO_DATA_NotifyData
+            {
+                [FieldOffset(0)]
+                [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
+                public uint[] IntegerData;
 
-			public const uint JOB_CONTROL_PAUSE = 1;
+                [FieldOffset(0)]
+                public PRINTER_NOTIFY_INFO_DATA_NotifyData_Data BinaryData;
+            }
 
-			public static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
-		}
+            [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+            public struct PRINTER_NOTIFY_INFO_DATA_NotifyData_Data
+            {
+                public uint ConstantBuffer;
+                public IntPtr BinaryBuffer;
+            }
+        }
 
-		public static class Kernel32
-		{
-			[DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
-			public static extern bool CloseHandle(IntPtr handle);
+        public static class Constants
+        {
+            public const uint ERROR_INSUFFICIENT_BUFFER = 122;
 
-			[DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
-			public static extern uint WaitForMultipleObjects(uint howMany, IntPtr[] handles, bool waitForAll, uint milliseconds);
+            public const uint INFINITE = 0xffffffff;
 
-			[DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
-			public static extern IntPtr CreateSemaphore(IntPtr securityAttributes, int initialCount, int maxCount, string name);
+            public const uint PRINTER_CHANGE_ADD_JOB = 0x00000100;
 
-			[DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
-			public static extern bool ReleaseSemaphore(IntPtr semaphoreHandle, int releaseCount, out int previousCount);
-		}
+            public const uint PRINTER_ENUM_LOCAL = 0x00000002;
+            public const uint PRINTER_ENUM_SHARED = 0x00000020;
 
-		public static class Winspool
-		{
-			[DllImport("winspool.drv", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
-			public static extern bool EnumPrinters(uint flags, string name, uint level, IntPtr buffer, uint bufferSize, out uint bytesNeeded, out uint printersStored);
+            public const ushort PRINTER_NOTIFY_FIELD_STATUS = 0x12;
 
-			[DllImport("winspool.drv", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
-			public static extern bool OpenPrinter2(string printerName, out IntPtr printerHandle, IntPtr printerDefaults, IntPtr printerOptions);
+            public const ushort JOB_NOTIFY_TYPE = 0x01;
 
-			[DllImport("winspool.drv", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
-			public static extern bool ClosePrinter(IntPtr printerHandle);
+            public const uint JOB_CONTROL_PAUSE = 1;
 
-			[DllImport("winspool.drv", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
-			public static extern IntPtr FindFirstPrinterChangeNotification(IntPtr printerHandle, uint filter, uint options, IntPtr printerNotifyOptions);
+            public static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
+        }
 
-			[DllImport("winspool.drv", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
-			public static extern bool FindNextPrinterChangeNotification(IntPtr notifHandle, out uint whatChanged, IntPtr printerNotifyOptions, out IntPtr printerNotifyInfo);
+        public static class Kernel32
+        {
+            [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
+            public static extern bool CloseHandle(IntPtr handle);
 
-			[DllImport("winspool.drv", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
-			public static extern bool FreePrinterNotifyInfo(IntPtr printerNotifyInfo);
+            [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
+            public static extern uint WaitForMultipleObjects(uint howMany, IntPtr[] handles, bool waitForAll, uint milliseconds);
 
-			[DllImport("winspool.drv", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
-			public static extern bool FindClosePrinterChangeNotification(IntPtr notifHandle);
+            [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
+            public static extern IntPtr CreateSemaphore(IntPtr securityAttributes, int initialCount, int maxCount, string name);
 
-			[DllImport("winspool.drv", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
-			public static extern bool SetJob(IntPtr printerHandle, uint jobID, uint jobInfoLevel, IntPtr jobInfo, uint command);
-		}
+            [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
+            public static extern bool ReleaseSemaphore(IntPtr semaphoreHandle, int releaseCount, out int previousCount);
+        }
+
+        public static class Winspool
+        {
+            [DllImport("winspool.drv", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
+            public static extern bool EnumPrinters(uint flags, string name, uint level, IntPtr buffer, uint bufferSize, out uint bytesNeeded, out uint printersStored);
+
+            [DllImport("winspool.drv", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
+            public static extern bool OpenPrinter(string printerName, out IntPtr printerHandle, IntPtr printerDefaults);
+
+            [DllImport("winspool.drv", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
+            public static extern bool ClosePrinter(IntPtr printerHandle);
+
+            [DllImport("winspool.drv", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
+            public static extern IntPtr FindFirstPrinterChangeNotification(IntPtr printerHandle, uint filter, uint options, IntPtr printerNotifyOptions);
+
+            [DllImport("winspool.drv", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
+            public static extern bool FindNextPrinterChangeNotification(IntPtr notifHandle, out uint whatChanged, IntPtr printerNotifyOptions, out IntPtr printerNotifyInfo);
+
+            [DllImport("winspool.drv", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
+            public static extern bool FreePrinterNotifyInfo(IntPtr printerNotifyInfo);
+
+            [DllImport("winspool.drv", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
+            public static extern bool FindClosePrinterChangeNotification(IntPtr notifHandle);
+
+            [DllImport("winspool.drv", SetLastError = true, CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Auto)]
+            public static extern bool SetJob(IntPtr printerHandle, uint jobID, uint jobInfoLevel, IntPtr jobInfo, uint command);
+        }
     }
 }

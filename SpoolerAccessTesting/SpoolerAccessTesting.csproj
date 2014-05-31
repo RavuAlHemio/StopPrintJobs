@@ -81,4 +81,10 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <ItemGroup>
+    <ProjectReference Include="..\SpoolerAccessPI\SpoolerAccessPI.csproj">
+      <Project>{C9450B6C-8BA5-4028-B863-0E1B30903817}</Project>
+      <Name>SpoolerAccessPI</Name>
+    </ProjectReference>
+  </ItemGroup>
 </Project>

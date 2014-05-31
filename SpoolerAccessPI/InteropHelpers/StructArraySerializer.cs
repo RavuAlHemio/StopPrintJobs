@@ -8,10 +8,9 @@ using System.Runtime.InteropServices;
 namespace SpoolerAccessPI.InteropHelpers
 {
     /// <summary>
-    /// Serializes multiple structs into memory (not necessarily contiguously) and provides a pointer
-    /// to an array of pointers at which the structs are stored.
+    /// Serializes an array of structs into contiguous memory and provides a pointer to the beginning of the first struct.
     /// </summary>
-    internal class IndirectStructArraySerializer<T> : IDisposable
+    internal class StructArraySerializer<T> : IDisposable
     {
         /// <summary>
         /// Contains the structs that will be serialized when <see cref="Serialize()"/> is called and deserialized
@@ -20,9 +19,9 @@ namespace SpoolerAccessPI.InteropHelpers
         public List<T> TheStructs { get; private set; }
 
         /// <summary>
-        /// Once Serialize() is called, contains a pointer to an array of pointers to serialized versions of the structs.
+        /// Once Serialize() is called, contains a pointer to the beginning of the first struct.
         /// </summary>
-        public IntPtr PointerToStructPointers { get; private set; }
+        public IntPtr PointerToFirstStruct { get; private set; }
 
         /// <summary>
         /// Once Serialize() is called, contains the size of one serialized struct.
@@ -34,35 +33,33 @@ namespace SpoolerAccessPI.InteropHelpers
         /// </summary>
         public int? SerializedCount { get; private set; }
 
-        private List<IntPtr> StructPointers { get; set; }
         private bool IsDisposed { get; set; }
 
         /// <summary>
         /// Creates a new serializer for the given array of structs.
         /// </summary>
         /// <param name="theStructs">The structs for which to create the serializer.</param>
-        public IndirectStructArraySerializer(IEnumerable<T> theStructs)
+        public StructArraySerializer(IEnumerable<T> theStructs)
         {
             TheStructs = new List<T>(theStructs);
-            PointerToStructPointers = IntPtr.Zero;
+            PointerToFirstStruct = IntPtr.Zero;
             StructSize = null;
             SerializedCount = null;
 
-            StructPointers = new List<IntPtr>();
             IsDisposed = false;
         }
 
         /// <summary>
         /// Creates a new serializer for an initially empty array of structs.
         /// </summary>
-        public IndirectStructArraySerializer() : this(new T[] {})
+        public StructArraySerializer() : this(new T[] {})
         {
         }
 
         /// <summary>
-        /// Serializes the structs, making PointerToStructPointers point to the area in memory where the
-        /// array of pointers to the structs is stored, setting StructSize to the size of one serialized struct,
-        /// and setting SerializedCount to the number of structs that have been serialized.
+        /// Serializes the structs, making PointerToFirstStruct point to the beginning of the first struct,
+        /// setting StructSize to the size of one serialized struct, and setting SerializedCount to the number
+        /// of structs that have been serialized.
         /// </summary>
         public void Serialize()
         {
@@ -71,22 +68,20 @@ namespace SpoolerAccessPI.InteropHelpers
                 throw new ObjectDisposedException(GetType().FullName);
             }
 
+            StructSize = Marshal.SizeOf(typeof(T));
+
             // deallocate the previous pointers
             DeallocateSerializedStructs();
 
-            StructSize = Marshal.SizeOf(typeof(T));
+            // allocate the chunk
+            PointerToFirstStruct = Marshal.AllocHGlobal(TheStructs.Count * StructSize.Value);
 
-            // marshal the structs individually
-            foreach (var theStruct in TheStructs)
+            // marshal the structs in sequence
+            for (int i = 0; i < TheStructs.Count; ++i)
             {
-                var structPointer = Marshal.AllocHGlobal(StructSize.Value);
-                StructPointers.Add(structPointer);
-                Marshal.StructureToPtr(theStruct, structPointer, false);
+                var thisStructPtr = IntPtr.Add(PointerToFirstStruct, i * StructSize.Value);
+                Marshal.StructureToPtr(TheStructs[i], thisStructPtr, false);
             }
-
-            // assemble the array of pointers to the structs
-            PointerToStructPointers = Marshal.AllocHGlobal(StructPointers.Count * IntPtr.Size);
-            Marshal.Copy(StructPointers.ToArray(), 0, PointerToStructPointers, StructPointers.Count);
 
             // store SerializedCount
             SerializedCount = TheStructs.Count;
@@ -96,20 +91,20 @@ namespace SpoolerAccessPI.InteropHelpers
         /// Deserializes a different struct array, loading the structs into TheStructs. Other public-facing
         /// properties remain untouched.
         /// </summary>
-        public void Deserialize(int count, IntPtr pointerToStructPointers)
+        public void Deserialize(int count, IntPtr pointerToContiguousStructs)
         {
             if (IsDisposed)
             {
                 throw new ObjectDisposedException(GetType().FullName);
             }
 
-            var localStructPointers = new IntPtr[count];
-            Marshal.Copy(pointerToStructPointers, localStructPointers, 0, count);
+            var oneSize = Marshal.SizeOf(typeof(T));
 
             TheStructs.Clear();
-            foreach (var structPointer in localStructPointers)
+            for (int i = 0; i < count; ++i)
             {
-                TheStructs.Add((T)Marshal.PtrToStructure(structPointer, typeof(T)));
+                var thisStructPtr = IntPtr.Add(pointerToContiguousStructs, i * oneSize);
+                TheStructs.Add((T)Marshal.PtrToStructure(thisStructPtr, typeof(T)));
             }
         }
 
@@ -125,26 +120,26 @@ namespace SpoolerAccessPI.InteropHelpers
 
             // clear the old list
             TheStructs.Clear();
-
-            foreach (var structPointer in StructPointers)
+            for (int i = 0; i < SerializedCount.Value; ++i)
             {
-                TheStructs.Add((T)Marshal.PtrToStructure(structPointer, typeof(T)));
+                var thisStructPtr = IntPtr.Add(PointerToFirstStruct, i * StructSize.Value);
+                TheStructs.Add((T)Marshal.PtrToStructure(thisStructPtr, typeof(T)));
             }
         }
 
         protected void DeallocateSerializedStructs()
         {
-            if (PointerToStructPointers != IntPtr.Zero)
+            if (PointerToFirstStruct != IntPtr.Zero)
             {
-                Marshal.FreeHGlobal(PointerToStructPointers);
-                PointerToStructPointers = IntPtr.Zero;
+                for (int i = 0; i < SerializedCount; ++i)
+                {
+                    // destroy contained struct fields
+                    var thisStructPtr = IntPtr.Add(PointerToFirstStruct, i * StructSize.Value);
+                    Marshal.DestroyStructure(thisStructPtr, typeof(T));
+                }
+                Marshal.FreeHGlobal(PointerToFirstStruct);
+                PointerToFirstStruct = IntPtr.Zero;
             }
-            foreach (var structPointer in StructPointers)
-            {
-                Marshal.DestroyStructure(structPointer, typeof(T));
-                Marshal.FreeHGlobal(structPointer);
-            }
-            StructPointers.Clear();
         }
 
         /// <summary>
@@ -173,7 +168,7 @@ namespace SpoolerAccessPI.InteropHelpers
             IsDisposed = true;
         }
 
-        ~IndirectStructArraySerializer()
+        ~StructArraySerializer()
         {
             Dispose(false);
         }
