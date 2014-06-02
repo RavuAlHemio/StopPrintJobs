@@ -59,14 +59,20 @@ namespace StopPrintJobs
                 catch (SpoolerAccessPI.InteropHelpers.NativeCodeException exc)
                 #endif
                 {
-                    TheEventLog.WriteEntry(string.Format(
-                        "{0} (function {1} returned code {2})",
-                        exc.Message,
-                        exc.NativeFunction,
-                        exc.ErrorCode
-                    ));
-                    // try again
-                    continue;
+                    if (StopPrintJobs.Properties.Settings.Default.LogLevel > 0)
+                    {
+                        TheEventLog.WriteEntry(string.Format(
+                            "{0} (function {1} returned code {2})",
+                            exc.Message,
+                            exc.NativeFunction,
+                            exc.ErrorCode
+                        ));
+                    }
+                    if (!StopPrintJobs.Properties.Settings.Default.RestartOnError)
+                    {
+                        // don't try again
+                        break;
+                    }
                 }
             }
         }

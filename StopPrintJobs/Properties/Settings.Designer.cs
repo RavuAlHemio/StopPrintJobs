@@ -31,5 +31,23 @@ namespace StopPrintJobs.Properties {
                 return ((string)(this["PrintersToStop"]));
             }
         }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public int LogLevel {
+            get {
+                return ((int)(this["LogLevel"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool RestartOnError {
+            get {
+                return ((bool)(this["RestartOnError"]));
+            }
+        }
     }
 }

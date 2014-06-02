@@ -61,11 +61,17 @@ namespace SpoolerAccessPI
             public struct PRINTER_NOTIFY_INFO_DATA_NotifyData
             {
                 [FieldOffset(0)]
-                [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
-                public uint[] IntegerData;
+                public PRINTER_NOTIFY_INFO_DATA_NotifyData_IntegerData IntegerData;
 
                 [FieldOffset(0)]
                 public PRINTER_NOTIFY_INFO_DATA_NotifyData_Data BinaryData;
+            }
+
+            [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+            public struct PRINTER_NOTIFY_INFO_DATA_NotifyData_IntegerData
+            {
+                public uint IntegerData0;
+                public uint IntegerData1;
             }
 
             [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]

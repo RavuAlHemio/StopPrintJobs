@@ -153,21 +153,20 @@ namespace SpoolerAccessPI
                             using (var notifyInfoDisposer = InteropHelpers.HandleArrayDisposer.NewReturningBool(Natives.Winspool.FreePrinterNotifyInfo))
                             using (var notifyInfoSerializer = new InteropHelpers.StructSerializer<Natives.Structures.PRINTER_NOTIFY_INFO>())
                             {
-                                notifyInfoSerializer.Deserialize(notifyInfoPointer);
-                                var notifyInfo = notifyInfoSerializer.TheStruct;
-                                if (notifyInfo.Count == 0)
+                                var notifyInfo = SpecialStructures.PrinterNotifyInfo.Deserialize(notifyInfoPointer);
+                                if (notifyInfo.DataList.Count == 0)
                                 {
                                     throw new InteropHelpers.NativeCodeException("add-job notification with no data?!", "FindNextPrinterChangeNotification");
                                 }
 
-                                if (notifyInfo.Data.Type != Natives.Constants.JOB_NOTIFY_TYPE)
+                                if (notifyInfo.DataList[0].Type != Natives.Constants.JOB_NOTIFY_TYPE)
                                 {
                                     throw new InteropHelpers.NativeCodeException("add-job notification with no job-related data?!", "FindNextPrinterChangeNotification");
                                 }
 
                                 // pause it
                                 // (need to subtract 1 because 0 is the stopping semaphore)
-                                if (!Natives.Winspool.SetJob(printerHandlesDisposer.Handles[(int)waitResult - 1], notifyInfo.Data.ID, 0, IntPtr.Zero, Natives.Constants.JOB_CONTROL_PAUSE))
+                                if (!Natives.Winspool.SetJob(printerHandlesDisposer.Handles[(int)waitResult - 1], notifyInfo.DataList[0].ID, 0, IntPtr.Zero, Natives.Constants.JOB_CONTROL_PAUSE))
                                 {
                                     throw new InteropHelpers.NativeCodeException("pausing job failed", "SetJob");
                                 }

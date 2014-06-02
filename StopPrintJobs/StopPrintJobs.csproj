@@ -73,7 +73,9 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Include="StopPrintJobsService.cs" />
+    <Compile Include="StopPrintJobsService.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="StopPrintJobsService.Designer.cs">
       <DependentUpon>StopPrintJobsService.cs</DependentUpon>
     </Compile>
@@ -88,22 +90,18 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SpoolerAccessPI\SpoolerAccessPI.csproj">
-      <Project>{c9450b6c-8ba5-4028-b863-0e1b30903817}</Project>
-      <Name>SpoolerAccessPI</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\SpoolerAccess\SpoolerAccess.vcxproj">
-      <Project>{15571719-aba6-49f1-af8f-3e54681593c8}</Project>
-      <Name>SpoolerAccess</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="ProjectInstaller.resx">
       <DependentUpon>ProjectInstaller.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="StopPrintJobsService.resx">
       <DependentUpon>StopPrintJobsService.cs</DependentUpon>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SpoolerAccessPI\SpoolerAccessPI.csproj">
+      <Project>{c9450b6c-8ba5-4028-b863-0e1b30903817}</Project>
+      <Name>SpoolerAccessPI</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
