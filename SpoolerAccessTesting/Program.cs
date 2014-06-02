@@ -5,11 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-#if I_LOVE_C_PLUS_PLUS_CLI
-using SpoolerAccess;
-#else
 using SpoolerAccessPI;
-#endif
 
 namespace SpoolerAccessTesting
 {

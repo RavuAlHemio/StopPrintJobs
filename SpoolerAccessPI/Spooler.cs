@@ -17,7 +17,7 @@ namespace SpoolerAccessPI
             StopSemaphore = Natives.Kernel32.CreateSemaphore(IntPtr.Zero, 0, 1, null);
             if (StopSemaphore == IntPtr.Zero)
             {
-                throw new InteropHelpers.NativeCodeException("failed to create stopping semaphore", "CreateSemaphore");
+                throw new InteropHelpers.FatalNativeCodeException("failed to create stopping semaphore", "CreateSemaphore");
             }
             IsDisposed = false;
         }
@@ -37,7 +37,7 @@ namespace SpoolerAccessPI
             {
                 if (Marshal.GetLastWin32Error() != Natives.Constants.ERROR_INSUFFICIENT_BUFFER)
                 {
-                    throw new InteropHelpers.NativeCodeException("failed to get space requirement for printer list", "EnumPrinters");
+                    throw new InteropHelpers.FatalNativeCodeException("failed to get space requirement for printer list", "EnumPrinters");
                 }
             }
 
@@ -48,7 +48,7 @@ namespace SpoolerAccessPI
                 // fetch again
                 if (!Natives.Winspool.EnumPrinters(searchFlags, null, 4, printerInfoBytes.Pointer, bytesNeeded, out bytesReturned, out itemsReturned))
                 {
-                    throw new InteropHelpers.NativeCodeException("failed to get printer list", "EnumPrinters");
+                    throw new InteropHelpers.FatalNativeCodeException("failed to get printer list", "EnumPrinters");
                 }
 
                 // deserialize!
@@ -78,7 +78,7 @@ namespace SpoolerAccessPI
                     IntPtr printerHandle;
                     if (!Natives.Winspool.OpenPrinter(printerName, out printerHandle, IntPtr.Zero) || printerHandle == Natives.Constants.INVALID_HANDLE_VALUE)
                     {
-                        throw new InteropHelpers.NativeCodeException("failed to open printer " + printerName, "OpenPrinter2");
+                        throw new InteropHelpers.FatalNativeCodeException("failed to open printer " + printerName, "OpenPrinter2");
                     }
                     printerHandlesDisposer.Handles.Add(printerHandle);
                 }
@@ -118,7 +118,7 @@ namespace SpoolerAccessPI
                             IntPtr notif = Natives.Winspool.FindFirstPrinterChangeNotification(printerHandle, Natives.Constants.PRINTER_CHANGE_ADD_JOB, 0, notifyOptionsSerializer.StructPointer);
                             if (notif == Natives.Constants.INVALID_HANDLE_VALUE)
                             {
-                                throw new InteropHelpers.NativeCodeException("failed to subscribe to notifications for a printer", "FindFirstPrinterChangeNotification");
+                                throw new InteropHelpers.FatalNativeCodeException("failed to subscribe to notifications for a printer", "FindFirstPrinterChangeNotification");
                             }
                             notificationDisposer.Handles.Add(notif);
                         }
@@ -134,7 +134,7 @@ namespace SpoolerAccessPI
                             uint waitResult = Natives.Kernel32.WaitForMultipleObjects((uint)waitHandles.Length, waitHandles, false, Natives.Constants.INFINITE);
                             if (waitResult >= waitHandles.Length)
                             {
-                                throw new InteropHelpers.NativeCodeException("waiting for printers failed", "WaitForMultipleObjects");
+                                throw new InteropHelpers.FatalNativeCodeException("waiting for printers failed", "WaitForMultipleObjects");
                             }
                             else if (waitResult == 0)
                             {

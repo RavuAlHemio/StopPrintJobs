@@ -9,11 +9,7 @@ using System.Linq;
 using System.ServiceProcess;
 using System.Text;
 using System.Threading;
-#if I_LOVE_C_PLUS_PLUS_CLI
-using SpoolerAccess;
-#else
 using SpoolerAccessPI;
-#endif
 
 namespace StopPrintJobs
 {
@@ -53,11 +49,17 @@ namespace StopPrintJobs
                     // if PauseNewJobsProc returns, it's a clean shutdown
                     break;
                 }
-                #if I_LOVE_C_PLUS_PLUS_CLI
-                catch (SpoolerAccess.Win32Exception exc)
-                #else
+                catch (SpoolerAccessPI.InteropHelpers.FatalNativeCodeException exc)
+                {
+                    TheEventLog.WriteEntry(string.Format(
+                        "{0} (function {1} returned code {2})",
+                        exc.Message,
+                        exc.NativeFunction,
+                        exc.ErrorCode
+                    ), EventLogEntryType.Error);
+                    break;
+                }
                 catch (SpoolerAccessPI.InteropHelpers.NativeCodeException exc)
-                #endif
                 {
                     if (StopPrintJobs.Properties.Settings.Default.LogLevel > 0)
                     {
@@ -66,9 +68,9 @@ namespace StopPrintJobs
                             exc.Message,
                             exc.NativeFunction,
                             exc.ErrorCode
-                        ));
+                        ), EventLogEntryType.Warning);
                     }
-                    if (!StopPrintJobs.Properties.Settings.Default.RestartOnError)
+                    if (StopPrintJobs.Properties.Settings.Default.StopOnNonfatalError)
                     {
                         // don't try again
                         break;

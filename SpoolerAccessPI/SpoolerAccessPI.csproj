@@ -32,6 +32,7 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="InteropHelpers\FatalNativeCodeException.cs" />
     <Compile Include="SpecialStructures\PrinterNotifyInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="InteropHelpers\IndirectStructArraySerializer.cs" />
@@ -44,7 +45,5 @@
     <Compile Include="InteropHelpers\NativeCodeException.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <ItemGroup>
-    <Folder Include="InteropHelpers\" />
-  </ItemGroup>
+  <ItemGroup />
 </Project>
