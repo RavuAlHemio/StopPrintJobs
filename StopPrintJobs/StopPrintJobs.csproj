@@ -59,14 +59,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Configuration.Install" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Management" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
     <Reference Include="System.ServiceProcess" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ProjectInstaller.cs">
@@ -80,9 +73,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Include="StopPrintJobsService.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Include="StopPrintJobsService.cs" />
     <Compile Include="StopPrintJobsService.Designer.cs">
       <DependentUpon>StopPrintJobsService.cs</DependentUpon>
     </Compile>
@@ -97,6 +88,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\SpoolerAccessPI\SpoolerAccessPI.csproj">
+      <Project>{c9450b6c-8ba5-4028-b863-0e1b30903817}</Project>
+      <Name>SpoolerAccessPI</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SpoolerAccess\SpoolerAccess.vcxproj">
       <Project>{15571719-aba6-49f1-af8f-3e54681593c8}</Project>
       <Name>SpoolerAccess</Name>
